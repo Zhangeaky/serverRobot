@@ -167,6 +167,7 @@ void Handeye::searchTF()
 
 void Handeye::callbackImage(const sensor_msgs::ImageConstPtr& msg)
 {
+    ROS_INFO("color image topic subscribed!");
      //cout<<"isworking:"<<this->isworking<<endl;
     if ( workstate ) {
         //cout<<"主线程正在工作"<<endl;
@@ -192,6 +193,7 @@ void Handeye::callbackImage(const sensor_msgs::ImageConstPtr& msg)
 
 void Handeye::alignDepthcallbackImage(const sensor_msgs::ImageConstPtr& msg)
 {
+    ROS_INFO("aligned depth topic subscribed!");
     this->ifdepthget = 1;
     //cout<<"isworking:"<<this->isworking<<endl;
     if ( workstate ) {
