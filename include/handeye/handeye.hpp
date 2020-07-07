@@ -29,24 +29,25 @@ using namespace std;
 bool workstate = 0;
 bool isDone = 0;
 
+extern ros::Time current_time;
+
 class Handeye final : public dobotTask
 {
 
 public:
-    
     Handeye(ros::NodeHandle& node):
     m_node(node), dobotTask(node)
     {
         //pthread_mutex_init(&mutex, NULL);
         //to be modified
         // //intrinx for zed2
-        // this->camera_matrix = (cv::Mat_<double>(3,3) <<  541.5486450195312,               0.0, 631.6287841796875,
-        //                                                                0.0, 541.5486450195312, 356.4523010253906,
-        //                                                                0.0,               0.0,                1.0);
-        // //for realsense
-        this->camera_matrix = (cv::Mat_<double>(3,3) <<  614.2579345703125,               0.0,  313.2626647949219, 
-                                                                       0.0, 612.4469604492188, 241.12669372558594, 
+        this->camera_matrix = (cv::Mat_<double>(3,3) <<  541.5486450195312,               0.0, 631.6287841796875,
+                                                                       0.0, 541.5486450195312, 356.4523010253906,
                                                                        0.0,               0.0,                1.0);
+        // //for realsense
+        // this->camera_matrix = (cv::Mat_<double>(3,3) <<  614.2579345703125,               0.0,  313.2626647949219, 
+        //                                                                0.0, 612.4469604492188, 241.12669372558594, 
+        //                                                                0.0,               0.0,                1.0);
 
         this->dist_coeffs =(cv::Mat_<double>(1,5) << 0.0,0.0,0.0,0.0,0.0);
 
@@ -55,21 +56,16 @@ public:
         this->m_test_point_stamped_publisher = this->m_node.advertise<geometry_msgs::PointStamped>("test_point",100);
 
         //for zed2
-        // m_image_sub = it_.subscribe("/zed2/zed_node/left/image_rect_color",100,&Handeye::callbackImage,this);
-        // m_depth_image_sub = it_.subscribe("/zed2/zed_node/depth/depth_registered",100,&Handeye::alignDepthcallbackImage,this);
-        // this->camera_stamped_points_msgs.header.frame_id = "zed2_left_camera_optical_frame";
-
+        m_image_sub = it_.subscribe("/zed2/zed_node/left/image_rect_color",100,&Handeye::callbackImage,this);
+        //m_depth_image_sub = it_.subscribe("/zed2/zed_node/depth/depth_registered",100,&Handeye::alignDepthcallbackImage,this);
+        this->camera_stamped_points_msgs.header.frame_id = "zed2_left_camera_optical_frame";
 
         //for realsense
-        m_sub_darknet_result = this->m_node.subscribe("/darknet_ros/bounding_boxes", 10, &Handeye::callbackBoundingBoxes,this);
-        m_image_sub = it_.subscribe("/camera/color/image_raw",100,&Handeye::callbackImage,this);
-        m_depth_image_sub = it_.subscribe("/camera/aligned_depth_to_color/image_raw",100,&Handeye::alignDepthcallbackImage,this);
-        this->camera_stamped_points_msgs.header.frame_id = "camera_color_optical_frame";
-        this->m_sub_point_cloud = this->m_node.subscribe("/darknet_ros/bounding_boxes", 10, &Handeye::callbackBoundingBoxes,this);
-
-        //std::thread signal(newThread);
-
-        
+        // m_sub_darknet_result = this->m_node.subscribe("/darknet_ros/bounding_boxes", 10, &Handeye::callbackBoundingBoxes,this);
+        // m_image_sub = it_.subscribe("/camera/color/image_raw",100,&Handeye::callbackImage,this);
+        // m_depth_image_sub = it_.subscribe("/camera/aligned_depth_to_color/image_raw",100,&Handeye::alignDepthcallbackImage,this);
+        // this->camera_stamped_points_msgs.header.frame_id = "camera_color_optical_frame";
+        // this->m_sub_point_cloud = this->m_node.subscribe("/darknet_ros/bounding_boxes", 10, &Handeye::callbackBoundingBoxes,this);
         
     }
 
@@ -92,6 +88,9 @@ public:
    // void publishWorld2BaseTF();
     void searchTF();
     void getdepth(int u, int v);
+
+    void getPointFromPC();
+  
  
 public:
 
@@ -111,6 +110,7 @@ public:
     tf::TransformBroadcaster marker_to_base_tf_broadcaster;
     tf::TransformBroadcaster world_to_base_tf_broadcaster;
     tf::TransformListener    listener;
+    tf::TransformListener    listener_temp;
 
     vector< cv::Point2f > marker_center;
     cv::Ptr< cv::aruco::Dictionary > dictionary;
@@ -141,19 +141,83 @@ public:
     map< string, vector< cv::Point2f > > pixel_points;
     map< string, vector< cv::Point3f > > camera_points;
 
-    string camera_frame = "camera_color_optical_frame";
-    //string camera_frame = "zed2_left_camera_optical_frame";
+    //string camera_frame = "camera_color_optical_frame";
+    string camera_frame = "zed2_left_camera_optical_frame";
+    vector< cv::Point3d > temp_camera_targets;
 };
 
-// void Handeye::newThread()
-// {
-//     ros::ServiceServer = this->
+void Handeye::getPointFromPC()
+{
+    ROS_INFO("Get Point from PC");
+    if( workstate ) {
+        ROS_INFO("Main Thread working!");
+        return;
+    }
+    this->temp_camera_targets.clear();
+    this->temp_target_points.clear();
+    tf::StampedTransform storage;
+    string parenet_id;
+    ros::Time time = ros::Time::now();
+    try {
 
+        bool a = this->listener_temp.waitForTransform(camera_frame,"drug",  ros::Time(0), ros::Duration(3.0));
+        cout<<"a: "<<a<<endl;
+        this->listener_temp.lookupTransform(camera_frame,"drug",  ros::Time(0), storage);
+    } catch ( tf::TransformException& e) {
 
-// }
+        ROS_ERROR("%s", e.what());
+        ros::Duration(1.0).sleep();
+        return;
+    }
+    
+
+    this->temp_camera_targets.push_back(cv::Point3d(storage.getOrigin().getX(), storage.getOrigin().getY(),storage.getOrigin().getZ()));
+    geometry_msgs::PointStamped pin;
+    pin.header.frame_id = camera_frame;
+    pin.header.stamp = time;
+    pin.point.x = storage.getOrigin().getX();
+    pin.point.y = storage.getOrigin().getY();
+    pin.point.z = storage.getOrigin().getZ(); 
+
+    geometry_msgs::PointStamped pout;  
+
+    try
+    {
+        this->listener_temp.waitForTransform(camera_frame,"magician_origin",  ros::Time(0), ros::Duration(3.0));
+        this->listener_temp.transformPoint("magician_origin", ros::Time(0),  pin, this->camera_frame, pout);
+    //this->listener.transformPoint("magician_origin", ros::Time(0),  pin, this->camera_frame, pout);
+        
+    }
+    catch( tf::TransformException& e )
+    {
+        ROS_ERROR("%s", e.what());
+        ros::Duration(1.0).sleep();
+        return;
+    }
+
+    //m_test_point_stamped_publisher.publish(pin);
+    m_test_point_stamped_publisher.publish(pout);
+    
+    
+    this->temp_target_points.push_back(cv::Point3d( pout.point.x, pout.point.y, pout.point.z ));
+    cout<<"存点完毕: "<<endl;
+
+    //cout<<"a: "<<a<<endl;
+    //this->listener_temp.lookupTransform(camera_frame,"drug",  time, storage);
+    
+    cout<<"x: "<<temp_target_points[0].x<<endl;   
+    cout<<"y: "<<temp_target_points[0].y<<endl;
+    cout<<"z: "<<temp_target_points[0].z<<endl;
+
+   
+    //this->listener_temp.getParent("drug",ros::Time::now(), parenet_id);f
+    //cout<<"frame_id: "<<parenet_id<<endl;
+}
 
 void Handeye::searchTF()
-{
+{   
+    this->temp_camera_targets.clear();
+
     tf::StampedTransform transform;
     try{
 
@@ -167,10 +231,8 @@ void Handeye::searchTF()
 
 void Handeye::callbackImage(const sensor_msgs::ImageConstPtr& msg)
 {
-    ROS_INFO("color image topic subscribed!");
-     //cout<<"isworking:"<<this->isworking<<endl;
+    //ROS_INFO("color image topic subscribed!");
     if ( workstate ) {
-        //cout<<"主线程正在工作"<<endl;
         return;
     }
 
@@ -188,6 +250,7 @@ void Handeye::callbackImage(const sensor_msgs::ImageConstPtr& msg)
 
     getMarker(cv_ptr->image,this->marker_center);
     this->picture = cv_ptr->image.clone();
+    this->getPointFromPC();
     //this->testCalculation();
 }
 
@@ -314,14 +377,14 @@ void Handeye::publishTarget2BaseTF()
     tf::Quaternion q;
 
     //transform.setOrigin( tf::Vector3( -0.0195, 0.2635, 0.0000) );
-    transform.setOrigin( tf::Vector3( -0.052, 0.1115, 0.0000) );
+    transform.setOrigin( tf::Vector3( 0.0155, 0.1105, 0.0000) );
 
-    q.setRPY(0.00,0.00,-1.57);
+    q.setRPY(0.00,0.00,-3.14);
     transform.setRotation(q);
 
     this->marker_to_base_tf_broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(),"target_marker","magician_base"));
 
-    transform.setOrigin( tf::Vector3( 0.0000, 0.0000, 0.126424) );
+    transform.setOrigin( tf::Vector3( 0.0000, 0.0000, 0.124724) );
 
     q.setRPY(0.00,0.00,0.00);
     transform.setRotation(q);
