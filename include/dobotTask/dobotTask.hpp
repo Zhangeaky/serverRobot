@@ -139,7 +139,7 @@ void dobotTask::doTempTask()
 
                 ROS_INFO("NO LIMITING");
 
-                this->goToPoint( x.x*1000 -10, x.y*1000, x.z*1000 + 25 );///TRICK HERE!!!
+                this->goToPoint( x.x*1000 -10, x.y*1000, x.z*1000 + 20 );///TRICK HERE!!!
             }
             
             this->pick();

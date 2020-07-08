@@ -8,14 +8,10 @@ extern bool workstate;
 extern bool isDone;
 Handeye* hand_eye_ptr = NULL;
 ros::Time current_time;
-
-//ros::NodeHandle* node_ptr = NULL;
-
 std::mutex valMutex;
 
 void visionCatch();
 void openDobotServer();
-
 void openYOLO();
 void openRealsense();
 bool signalCallback(robot_communication::SignalLaunch::Request& req, robot_communication::SignalLaunch::Response& res);
@@ -35,36 +31,10 @@ int main(int argc, char** argv)
     
     Handeye x(n);
     hand_eye_ptr = &x;
+
+    //接收zed图像话题
     std::thread t(visionCatch);
-
-    //while(1);
-    cout<<" wait !"<<endl;
-    
-    // while(1) {
-        
-    //     valMutex.lock();
-    //     //cout<<"workstate: "<<workstate<<endl;
-    //     bool temp = workstate;
-    //     valMutex.unlock();
-    //     if( !temp ) {
-    //         continue;
-    //     } else { 
-    //         ROS_INFO("work is coming...");
-    //         break;
-    //     }
-    // }
- 
-    // cout<<"dobot begin to work!"<<endl;
-
-    //workstate = 1;
-
-    // valMutex.lock();
-    // //x.doTask();
-    // //x.doTempTask();
-    // isDone = 1;
-    // valMutex.unlock();
-
-    //exit(0);
+   
     while(1);
 }
 //
@@ -78,8 +48,6 @@ void openRealsense()
 }
 void visionCatch()
 {
-  
-    
     ros::Rate r(30);
     while ( ros::ok() )
     {
@@ -102,8 +70,6 @@ void openDobotServer()
 bool signalCallback(robot_communication::SignalLaunch::Request& req, robot_communication::SignalLaunch::Response& res)
 {
     //此函数内不能使用线程锁
-    cout<<"callback"<<endl;
-
     system("/home/nvidia/catkin_d415/src/robot/axis_tf/src/cluster.sh");
 
     sleep(15);
@@ -111,26 +77,21 @@ bool signalCallback(robot_communication::SignalLaunch::Request& req, robot_commu
     // std::thread p1(openYOLO);
     // std::thread p2(openRealsense);
     
-    //sleep(10);//延时并等待相机完成启动
-
     // p1.~thread();
     // p2.~thread();
     ///valMutex.lock();
+
+    //停止订阅,进入工作状态
     workstate = 1;
-
     if ( req.decision == 0 ) {
-
         hand_eye_ptr->doTempTask();
-
     } else {
-
         hand_eye_ptr->backhome();
         hand_eye_ptr->toPrePose();
         workstate = 0;
     }
    
     return true; 
-
 }
 
 
