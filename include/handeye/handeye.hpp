@@ -159,9 +159,10 @@ void Handeye::getPointFromPC()
     string parenet_id;
     ros::Time time = ros::Time::now();
     try {
-
         bool a = this->listener_temp.waitForTransform(camera_frame,"drug",  ros::Time(0), ros::Duration(3.0));
-        cout<<"a: "<<a<<endl;
+        if( a == 0 ) {
+            ROS_ERROR("THE CAR HAS NOT ARRIVED, POINTCLOUD NODE IS NOT READY");
+        }
         this->listener_temp.lookupTransform(camera_frame,"drug",  ros::Time(0), storage);
     } catch ( tf::TransformException& e) {
 
@@ -184,9 +185,7 @@ void Handeye::getPointFromPC()
     try
     {
         this->listener_temp.waitForTransform(camera_frame,"magician_origin",  ros::Time(0), ros::Duration(3.0));
-        this->listener_temp.transformPoint("magician_origin", ros::Time(0),  pin, this->camera_frame, pout);
-    //this->listener.transformPoint("magician_origin", ros::Time(0),  pin, this->camera_frame, pout);
-        
+        this->listener_temp.transformPoint("magician_origin", ros::Time(0),  pin, this->camera_frame, pout);    
     }
     catch( tf::TransformException& e )
     {
@@ -195,10 +194,8 @@ void Handeye::getPointFromPC()
         return;
     }
 
-    //m_test_point_stamped_publisher.publish(pin);
+    //发布时间戳点在Rviz中验证准确性
     m_test_point_stamped_publisher.publish(pout);
-    
-    
     this->temp_target_points.push_back(cv::Point3d( pout.point.x, pout.point.y, pout.point.z ));
     cout<<"存点完毕: "<<endl;
 

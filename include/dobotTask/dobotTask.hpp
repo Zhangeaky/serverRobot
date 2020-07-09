@@ -104,7 +104,7 @@ void dobotTask::backhome()
     this->clearEndParams();
     this->goToPoint(209, -10, 14);
     this->place();
-    this->goHome();
+    //this->goHome();
 }
 
 void dobotTask::clearEndParams()
@@ -218,7 +218,7 @@ void dobotTask::dobotParamInit()
     // srv.request.zBias = 0;
     srv.request.xBias = 61;
     srv.request.yBias = 0;
-    srv.request.zBias = 60;
+    srv.request.zBias = 0;
     client_end_params.call(srv);
 
     //jump抬升高度

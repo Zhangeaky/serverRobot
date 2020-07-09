@@ -18,7 +18,9 @@ bool signalCallback(robot_communication::SignalLaunch::Request& req, robot_commu
 
 int main(int argc, char** argv)
 {
+
     ros::init(argc, argv, "hand_eye");
+
     ros::NodeHandle n;
     ros::ServiceServer server = n.advertiseService("launch_signal", signalCallback);
 
@@ -30,6 +32,7 @@ int main(int argc, char** argv)
     sleep(5);
     
     Handeye x(n);
+
     hand_eye_ptr = &x;
 
     //接收zed图像话题
@@ -53,13 +56,10 @@ void visionCatch()
     {
         ROS_INFO("vision thread begin");
         valMutex.lock();
-        //cout<<"id: "<<pthread_self()<<endl;
         current_time = ros::Time::now();
-        ros::spinOnce();
+        ros::spinOnce();// 在其中执行回调函数不能使用互斥锁
         r.sleep();
         valMutex.unlock();
-        //ROS_INFO("debug");
-        //pthread_mutex_unlock(&mutex);
     }
 }
 
@@ -70,9 +70,9 @@ void openDobotServer()
 bool signalCallback(robot_communication::SignalLaunch::Request& req, robot_communication::SignalLaunch::Response& res)
 {
     //此函数内不能使用线程锁
-    system("/home/nvidia/catkin_d415/src/robot/axis_tf/src/cluster.sh");
+    //system("/home/nvidia/catkin_d415/src/ARM_PART/robot/axis_tf/src/cluster.sh");
 
-    sleep(15);
+    //sleep(15);
    
     // std::thread p1(openYOLO);
     // std::thread p2(openRealsense);
