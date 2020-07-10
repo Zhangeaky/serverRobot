@@ -21,8 +21,6 @@
 
 using namespace std;
 
-
-
 class dobotTask
 {
     public:
@@ -59,8 +57,11 @@ class dobotTask
     bool isworking = 0;
     bool isDone = 0;
 
+    double Z_delta;
+
     public:
     dobotTask( ros::NodeHandle& node ) : node(node){
+        this->node.getParam("Z_bias", Z_delta);
         this->alarmClear();
         this->goHome();
         this->toPrePose();
@@ -68,6 +69,7 @@ class dobotTask
         dobot::GetEndEffectorParams srv;
         this->get_bias.call(srv);
         cout<<"params"<<srv.response.xBias<<"  "<<srv.response.yBias<<" "<<srv.response.zBias<<" "<<endl;
+
     }
 
     ~dobotTask() = default;
@@ -209,8 +211,6 @@ void dobotTask::goToPoint( float x, float y, float z )
 
 void dobotTask::dobotParamInit()
 {
-    //末端偏移参数设置初始化
-    //this->client_end_params = node.serviceClient<dobot::SetEndEffectorParams>("/DobotServer/SetEndEffectorParams");
     dobot::SetEndEffectorParams srv;
     srv.request.isQueued = 1;
     // srv.request.xBias = 0;

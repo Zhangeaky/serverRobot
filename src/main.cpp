@@ -6,6 +6,7 @@ using namespace std;
 
 extern bool workstate;
 extern bool isDone;
+
 Handeye* hand_eye_ptr = NULL;
 ros::Time current_time;
 std::mutex valMutex;
@@ -18,15 +19,16 @@ bool signalCallback(robot_communication::SignalLaunch::Request& req, robot_commu
 
 int main(int argc, char** argv)
 {
-
     ros::init(argc, argv, "hand_eye");
 
     ros::NodeHandle n;
     ros::ServiceServer server = n.advertiseService("launch_signal", signalCallback);
 
+
     valMutex.lock();
     ROS_INFO("ROBOT WORKSTATE: %d", workstate);
-    valMutex.unlock();    
+    valMutex.unlock();  
+
     std::thread t0(openDobotServer);
 
     sleep(5);
@@ -38,7 +40,7 @@ int main(int argc, char** argv)
     //接收zed图像话题
     std::thread t(visionCatch);
    
-    while(1);
+    while( ros::ok() );
 }
 //
 void openYOLO()
@@ -54,7 +56,7 @@ void visionCatch()
     ros::Rate r(30);
     while ( ros::ok() )
     {
-        ROS_INFO("vision thread begin");
+        ROS_INFO("vision thread begin!");
         valMutex.lock();
         current_time = ros::Time::now();
         ros::spinOnce();// 在其中执行回调函数不能使用互斥锁
@@ -67,20 +69,10 @@ void openDobotServer()
 {
     system("/home/nvidia/catkin_d415/src/ARM_PART/robot/axis_tf/src/dobot.sh");
 }
+
 bool signalCallback(robot_communication::SignalLaunch::Request& req, robot_communication::SignalLaunch::Response& res)
 {
-    //此函数内不能使用线程锁
-    //system("/home/nvidia/catkin_d415/src/ARM_PART/robot/axis_tf/src/cluster.sh");
-
-    //sleep(15);
-   
-    // std::thread p1(openYOLO);
-    // std::thread p2(openRealsense);
-    
-    // p1.~thread();
-    // p2.~thread();
-    ///valMutex.lock();
-
+    // std::thread p1(openYOLO);    
     //停止订阅,进入工作状态
     workstate = 1;
     if ( req.decision == 0 ) {
@@ -90,7 +82,7 @@ bool signalCallback(robot_communication::SignalLaunch::Request& req, robot_commu
         hand_eye_ptr->toPrePose();
         workstate = 0;
     }
-   
+    workstate = 0;
     return true; 
 }
 

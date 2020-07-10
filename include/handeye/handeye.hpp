@@ -69,6 +69,8 @@ public:
         
     }
 
+
+    void newVisionTFBroadcaster();
     void newThread();
 
     void cameraAxisCalculation(string cLass, cv::Point2i point );
@@ -145,6 +147,28 @@ public:
     string camera_frame = "zed2_left_camera_optical_frame";
     vector< cv::Point3d > temp_camera_targets;
 };
+
+// void Handeye::newVisionTFBroadcaster()
+// {
+//     tf::Transform trans;
+
+//     trans.setOrigin(-0.046, );
+
+//     cv::Mat rotated_matrix(3, 3, CV_64FC1);
+
+//     cv::Rodrigues(marker_rotate_vecs[0],rotated_matrix);
+//     rotated_matrix.convertTo(rotated_matrix, CV_64FC1);
+
+//     tf::Matrix3x3 tf_rotated_matrix(rotated_matrix.at<double>(0,0), rotated_matrix.at<double>(0,1),rotated_matrix.at<double>(0,2),
+//                         rotated_matrix.at<double>(1,0), rotated_matrix.at<double>(1,1), rotated_matrix.at<double>(1,2),
+//                         rotated_matrix.at<double>(2,0), rotated_matrix.at<double>(2,1), rotated_matrix.at<double>(2,2));
+
+//     tf::Vector3 tf_tvec(marker_trans_vecs[0][0],marker_trans_vecs[0][1],marker_trans_vecs[0][2]);
+
+//     tf::Transform transform(tf_rotated_matrix, tf_tvec);
+//     this->camera_to_marker_tf_broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), this->camera_frame, "target_marker"));
+//     this->publishTarget2BaseTF();
+// }
 
 void Handeye::getPointFromPC()
 {
@@ -245,7 +269,8 @@ void Handeye::callbackImage(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
 
-    getMarker(cv_ptr->image,this->marker_center);
+    //getMarker(cv_ptr->image,this->marker_center);
+    this->publishTarget2BaseTF();
     this->picture = cv_ptr->image.clone();
     this->getPointFromPC();
     //this->testCalculation();
@@ -373,7 +398,6 @@ void Handeye::publishTarget2BaseTF()
     tf::Transform transform;
     tf::Quaternion q;
 
-    //transform.setOrigin( tf::Vector3( -0.0195, 0.2635, 0.0000) );
     transform.setOrigin( tf::Vector3( 0.0155, 0.1105, 0.0000) );
 
     q.setRPY(0.00,0.00,-3.14);
