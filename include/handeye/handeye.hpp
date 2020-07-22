@@ -182,10 +182,12 @@ void Handeye::getPointFromPC()
     tf::StampedTransform storage;
     string parenet_id;
     ros::Time time = ros::Time::now();
+
     try {
         bool a = this->listener_temp.waitForTransform(camera_frame,"drug",  ros::Time(0), ros::Duration(3.0));
         if( a == 0 ) {
             ROS_ERROR("THE CAR HAS NOT ARRIVED, POINTCLOUD NODE IS NOT READY");
+            return;
         }
         this->listener_temp.lookupTransform(camera_frame,"drug",  ros::Time(0), storage);
     } catch ( tf::TransformException& e) {
@@ -195,7 +197,6 @@ void Handeye::getPointFromPC()
         return;
     }
     
-
     this->temp_camera_targets.push_back(cv::Point3d(storage.getOrigin().getX(), storage.getOrigin().getY(),storage.getOrigin().getZ()));
     geometry_msgs::PointStamped pin;
     pin.header.frame_id = camera_frame;
@@ -269,7 +270,7 @@ void Handeye::callbackImage(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
 
-    //getMarker(cv_ptr->image,this->marker_center);
+    getMarker(cv_ptr->image,this->marker_center);
     this->publishTarget2BaseTF();
     this->picture = cv_ptr->image.clone();
     this->getPointFromPC();

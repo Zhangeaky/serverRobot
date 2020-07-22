@@ -154,7 +154,12 @@ void dobotTask::doTempTask()
             //sleep(5); 
         }
         cout<<"Task finished!"<<endl; 
-        
+    // this->clearEndParams();
+    // this->goToPoint( 205, 34, -27 );///TRICK HERE!!!
+    // this->pick();
+    // this->clearEndParams();
+    // this->goToPoint( -71.0, -142.00, -33.00 );
+    // this->place();
 } 
 
 void dobotTask::toPrePose()
@@ -223,7 +228,7 @@ void dobotTask::dobotParamInit()
 
     //jump抬升高度
     dobot::SetPTPJumpParams srv_;
-    srv_.request.jumpHeight = 30;
+    srv_.request.jumpHeight = 40;
     srv_.request.isQueued = true;
     this->client_Jump_param.call(srv_);
 }

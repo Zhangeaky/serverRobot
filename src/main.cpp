@@ -38,9 +38,11 @@ int main(int argc, char** argv)
     hand_eye_ptr = &x;
 
     //接收zed图像话题
-    std::thread t(visionCatch);
+    //std::thread t(visionCatch);
    
-    while( ros::ok() );
+    while( ros::ok() ){
+        ros::spinOnce();
+    }
 }
 //
 void openYOLO()
@@ -80,7 +82,7 @@ bool signalCallback(robot_communication::SignalLaunch::Request& req, robot_commu
     } else {
         hand_eye_ptr->backhome();
         hand_eye_ptr->toPrePose();
-        workstate = 0;
+        //workstate = 0;
     }
     workstate = 0;
     return true; 
